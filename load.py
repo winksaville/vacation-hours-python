@@ -42,30 +42,56 @@ def insert_data_from_csv(cursor, table_name, headers, csv_file):
         for row in reader:
             cursor.execute(insert_query, row)
 
-def load_csv_to_sqlite(csv_file):
-    check_file_exists(csv_file)
+def load_csv_to_sqlite(db_filename, csv_filename, table_name):
+    check_file_exists(csv_filename)
 
-    conn = connect_to_db()
+    conn = connect_to_db(db_filename)
     cursor = conn.cursor()
 
-    table_name = get_table_name(csv_file)
-    headers = get_headers_from_csv(csv_file)
+    headers = get_headers_from_csv(csv_filename)
     logging.debug(f"headers: {headers}");
 
     create_table(cursor, table_name, headers)
-    insert_data_from_csv(cursor, table_name, headers, csv_file)
+    insert_data_from_csv(cursor, table_name, headers, csv_filename)
 
     conn.commit()
     conn.close()
-    print(f"Data from '{csv_file}' loaded into 'ledger.db' as table '{table_name}'.")
+    print(f"Data from '{csv_filename}' loaded into '{db_filename}' as table '{table_name}'.")
+
+def usage():
+    print("Usage: ./load.py <name> or <db_filename> <csv_filename> {table_name}")
+    print("  name: If only one parameter db_filename=name.db csv_filename=name.csv table_name=name")
+    print("  db_filename: Name of the database file")
+    print("  csv_filename: Name of the csv file that will be added to the database")
+    print("  table_name:   Optional, if not supplied it will be the basename of the csv_filename")
+    print("                example; csv_filename=vacation_hours.csv table_name=vacation_hours")
 
 if __name__ == "__main__":
     # Configure logging
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    level = None
+    #level = loggine.DEBUG
+    logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
-    if len(sys.argv) < 2:
-        print("Usage: python load_csv.py <csv_file>")
+    if len(sys.argv) == 1:
+        logging.debug("len(sys.argv) == 1")
+        usage()
         sys.exit(1)
 
-    csv_filename = sys.argv[1]
-    load_csv_to_sqlite(csv_filename)
+    if len(sys.argv) == 2:
+        table_name = sys.argv[1]
+        db_filename = table_name + ".db"
+        csv_filename = table_name + ".csv"
+    elif len(sys.argv) == 3:
+        db_filename = sys.argv[1]
+        csv_filename = sys.argv[2]
+        table_name = get_table_name(csv_filename)
+    elif len(sys.argv) == 4:
+        db_filename = sys.argv[1]
+        csv_filename = sys.argv[2]
+        table_name = sys.argv[3]
+    else:
+        logging.debug("else")
+        usage()
+        sys.exit(1)
+
+    load_csv_to_sqlite(db_filename, csv_filename, table_name)
