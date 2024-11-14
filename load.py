@@ -30,6 +30,11 @@ def create_table(cursor, table_name, headers):
     logging.debug(f"table_name: {table_name}")
     logging.debug(f"headers: {headers}")
     columns = ', '.join([f'"{header}" TEXT' for header in headers])
+
+    # Set 'UniqueId' as the primary key
+    if "UniqueId" in headers:
+        columns += ', PRIMARY KEY("UniqueId")'
+
     logging.debug(f"columns: {columns}")
     cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns})')
 
@@ -37,10 +42,16 @@ def insert_data_from_csv(cursor, table_name, headers, csv_file):
     with open(csv_file, newline='') as f:
         reader = csv.reader(f)
         next(reader)  # Skip the header row
-        insert_query = f"INSERT INTO {table_name} ({', '.join(headers)}) VALUES ({', '.join(['?' for _ in headers])})"
+        insert_query = f"INSERT OR IGNORE INTO {table_name} ({', '.join(headers)}) VALUES ({', '.join(['?' for _ in headers])})"
         logging.debug(f"insert_query: {insert_query}")
+
+        new_records_count = 0
         for row in reader:
             cursor.execute(insert_query, row)
+            if cursor.rowcount > 0:
+                new_records_count += 1
+
+        return new_records_count
 
 def load_csv_to_sqlite(db_filename, csv_filename, table_name):
     check_file_exists(csv_filename)
@@ -52,11 +63,12 @@ def load_csv_to_sqlite(db_filename, csv_filename, table_name):
     logging.debug(f"headers: {headers}");
 
     create_table(cursor, table_name, headers)
-    insert_data_from_csv(cursor, table_name, headers, csv_filename)
+    new_records_count = insert_data_from_csv(cursor, table_name, headers, csv_filename)
 
     conn.commit()
     conn.close()
     print(f"Data from '{csv_filename}' loaded into '{db_filename}' as table '{table_name}'.")
+    print(f"New records loaded: {new_records_count}")
 
 def usage():
     print("Usage: ./load.py <name> or <db_filename> <csv_filename> {table_name}")

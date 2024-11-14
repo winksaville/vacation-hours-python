@@ -31,6 +31,7 @@ Pass one parameter, name
 $ rm *.db
 $ ./load.py vacation_hours
 Data from 'vacation_hours.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
+New records loaded: 5
 ```
 
 Pass two parameter, db_filename and csv_filename:
@@ -38,13 +39,55 @@ Pass two parameter, db_filename and csv_filename:
 $ rm *.db
 $ ./load.py ledger.db vacation_hours.csv
 Data from 'vacation_hours.csv' loaded into 'ledger.db' as table 'vacation_hours'.$ ./load.py ledger.db vacation_hours.csv
+New records loaded: 5
 ```
 
-Pass three parameters: db_filename csv_filename table_name:
+Here we'll use 3 parameters and load two csv files which overlap:
+```
+$ cat vacation_hours.name1-3.csv
+UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accurred,Balance Hours
+1,Name1,100,50,2024-10-01,8,102
+2,Name1,100,50,2024-10-01,-2,100
+3,Name2,50,75,2024-10-01,5,55
+$ cat vacation_hours.name3-5.csv
+UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accurred,Balance Hours
+3,Name2,50,75,2024-10-01,5,55
+4,Name3,200,25,2024-10-01,8,208
+5,Name3,200,25,2024-10-01,-8,200
+```
+
+Here we load 3 records form `vacation_hours.name1-3.csv` and
+we see 3 records:
 ```
 $ rm *.db
-$ ./load.py ledger.db vacation_hours.csv main_ledger
-Data from 'vacation_hours.csv' loaded into 'ledger.db' as table 'main_ledger'.
+$ ./load.py ledger.db vacation_hours.name1-3.csv vacation_hours
+Data from 'vacation_hours.name1-3.csv' loaded into 'ledger.db' as table 'vacation_hours'.
+New records loaded: 3
+$ ./dump.py ledger.db vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+----------------------------------------
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55')
+```
+
+Next we'll load vacation_hours.name3-5.csv which also has
+3 records, but one of the records is already present so
+it's ignored and "New records loaded: 2" instead of 3:
+```
+$ ./load.py ledger.db vacation_hours.name3-5.csv vacation_hours
+Data from 'vacation_hours.name3-5.csv' loaded into 'ledger.db' as table 'vacation_hours'.
+New records loaded: 2
+$ ./dump.py ledger.db vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+----------------------------------------
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55')
+('4', 'Name3', '200', '25', '2024-10-01', '8', '208')
+('5', 'Name3', '200', '25', '2024-10-01', '-8', '200')
 ```
 
 ### Dump database
