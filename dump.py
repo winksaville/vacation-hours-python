@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
+
+# Standard library imports
+import csv
+import logging
+import os
 import sqlite3
 import sys
-import os
-import logging
+
+# Local application imports
+from version import version
 
 def dump_table(db_name, table_name):
     logging.debug(f"db_name: {db_name} table_name: {table_name}:+");
@@ -42,6 +48,8 @@ def dump_table(db_name, table_name):
     logging.debug(f"db_name: {db_name} table_name: {table_name}:-");
 
 def usage():
+    print(f"Version: {version}")
+    print()
     print("Usage: ./dump.py <name> or <db_filename> <table_name>")
     print("  name: If only one parameter db_filename=name.db table_name=name")
     print("  db_filename: File name of database")

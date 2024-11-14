@@ -18,6 +18,8 @@ $ rm *.db
 Pass no parameters to see usage help `load.py`:
 ```
 $ ./load.py
+Version: 0.1.0
+
 Usage: ./load.py <name> or <db_filename> <csv_filename> {table_name}
   name: If only one parameter db_filename=name.db csv_filename=name.csv table_name=name
   db_filename: Name of the database file
@@ -95,6 +97,8 @@ Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hour
 Pass no parameters to see usage help `dump.py`:
 ```
 $ ./dump.py
+Version: 0.1.0
+
 Usage: ./dump.py <name> or <db_filename> <table_name>
   name: If only one parameter db_filename=name.db table_name=name
   db_filename: File name of database

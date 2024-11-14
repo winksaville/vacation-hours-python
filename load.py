@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
+
+# Standard library imports
 import csv
+import logging
+import os
 import sqlite3
 import sys
-import os
-import logging
+
+# Local application imports
+from version import version
 
 def check_file_exists(csv_file):
     if not os.path.isfile(csv_file):
@@ -71,6 +76,8 @@ def load_csv_to_sqlite(db_filename, csv_filename, table_name):
     print(f"New records loaded: {new_records_count}")
 
 def usage():
+    print(f"Version: {version}")
+    print()
     print("Usage: ./load.py <name> or <db_filename> <csv_filename> {table_name}")
     print("  name: If only one parameter db_filename=name.db csv_filename=name.csv table_name=name")
     print("  db_filename: Name of the database file")

@@ -1,1 +1,7 @@
+# Ignore all .db files
 *.db
+
+# Ignore generated python directories and files
+# Note: .py[cod] == .pyc, .pyo and .pyd
+__pycache__/
+.py[cod]
