@@ -41,14 +41,30 @@ def dump_table(db_name, table_name):
     conn.close()
     logging.debug(f"db_name: {db_name} table_name: {table_name}:-");
 
+def usage():
+    print("Usage: ./dump.py <name> or <db_filename> <table_name>")
+    print("  name: If only one parameter db_filename=name.db table_name=name")
+    print("  db_filename: File name of database")
+    print("  table_name: Table within the database to dump")
+
 if __name__ == "__main__":
     # Configure logging
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    level = None
+    #level = loggine.DEBUG
+    logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
-    if len(sys.argv) < 3:
-        print("Usage: python dump_ledger.py <db_file> <table_name>")
+    if len(sys.argv) == 1:
+        usage()
         sys.exit(1)
 
-    db_filename = sys.argv[1]
-    table_name = sys.argv[2]
+    if len(sys.argv) == 2:
+        table_name = sys.argv[1]
+        db_filename = table_name + ".db"
+    elif len(sys.argv) == 3:
+        db_filename = sys.argv[1]
+        table_name = sys.argv[2]
+    else:
+        usage()
+        sys.exit(1)
+
     dump_table(db_filename, table_name)
