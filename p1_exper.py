@@ -1,38 +1,39 @@
 #!/usr/bin/env python3
 
-# Standard library imports
 import logging
 import os
 import sqlite3
 import sys
-
-# Local application imports
 from version import version
 
 def connect_to_db(db_name='ledger.db'):
     return sqlite3.connect(db_name)
 
 def find_table(cursor):
-    """Returns the table name if there's only one table, otherwise None."""
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
     tables = [row[0] for row in cursor.fetchall()]
     if len(tables) == 1:
         return tables[0]
     return None
 
-def sort_table(db_name, table_name):
+def add_rebalance_column(cursor, table_name):
+    """Adds 'Rebalance_hours' column if it doesn't exist."""
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    columns = [info[1] for info in cursor.fetchall()]
+    if "Rebalance_hours" not in columns:
+        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN Rebalance_hours INTEGER DEFAULT 0")
+        logging.debug(f"Added 'Rebalance_hours' column to {table_name}")
+
+def sort_and_rebalance(db_name, table_name):
     logging.debug(f"db_name: {db_name}, table_name: {table_name}")
 
-    # Check if the database file exists
     if not os.path.isfile(db_name):
         print(f"Database file '{db_name}' not found.")
         sys.exit(1)
 
-    # Connect to the SQLite database
     conn = connect_to_db(db_name)
     cursor = conn.cursor()
 
-    # If table name is not provided, try to find it automatically
     if not table_name:
         table_name = find_table(cursor)
         if not table_name:
@@ -40,34 +41,54 @@ def sort_table(db_name, table_name):
             conn.close()
             sys.exit(1)
 
-    # Check if the table exists
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
     if cursor.fetchone() is None:
         print(f"Table '{table_name}' does not exist in the database.")
         conn.close()
         sys.exit(1)
 
-    # Sort the table by 'Name' and 'UniqueId'
-    query = f"SELECT * FROM {table_name} ORDER BY Name, UniqueId"
-    logging.debug(f"query: {query}")
+    add_rebalance_column(cursor, table_name)
 
+    # Sort and fetch the data
+    query = f"SELECT * FROM {table_name} ORDER BY Name, UniqueId"
     cursor.execute(query)
     rows = cursor.fetchall()
 
-    # Fetch column names for printing
+    # Get the list of columns
     cursor.execute(f"PRAGMA table_info({table_name})")
     columns = [info[1] for info in cursor.fetchall()]
 
-    # Print sorted results
-    print(f"Sorted data from table: {table_name}")
-    print(f"Columns: {', '.join(columns)}")
-    print("-" * 40)
+    # Index of columns
+    idx_name = columns.index("Name")
+    idx_hours_accrued = columns.index("Hours_accrued")
+    idx_unique_id = columns.index("UniqueId")
+
+    # Rebalance calculation
+    rebalance_hours = 0
+    previous_name = None
 
     for row in rows:
-        print(row)
+        unique_id = row[idx_unique_id]
+        name = row[idx_name]
+        hours_accrued = int(row[idx_hours_accrued])
 
+        if name != previous_name:
+            rebalance_hours = 0
+
+        rebalance_hours += hours_accrued
+
+        # Update the row with the new Rebalance_hours
+        cursor.execute(
+            f"UPDATE {table_name} SET Rebalance_hours = ? WHERE UniqueId = ?",
+            (rebalance_hours, unique_id),
+        )
+
+        previous_name = name
+
+    conn.commit()
     conn.close()
-    logging.debug(f"db_name: {db_name}, table_name: {table_name} - Finished")
+
+    print(f"Rebalance hours updated for table '{table_name}'.")
 
 def usage():
     print(f"Version: {version}")
@@ -77,7 +98,6 @@ def usage():
     print("  table_name:  Optional, specify the table to process (if not provided, the app will try to find it automatically)")
 
 if __name__ == "__main__":
-    # Configure logging
     level = None
     #level = logging.DEBUG
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
@@ -89,4 +109,4 @@ if __name__ == "__main__":
     db_filename = sys.argv[1]
     table_name = sys.argv[2] if len(sys.argv) == 3 else None
 
-    sort_table(db_filename, table_name)
+    sort_and_rebalance(db_filename, table_name)
