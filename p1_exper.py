@@ -55,6 +55,28 @@ def update_rebalance_hours(cursor, table_name, rows, indices):
 
         previous_name = name
 
+def print_table_data(cursor, table_name):
+    """Prints the contents of the table in a formatted way."""
+    # Fetch column names
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    columns = [info[1] for info in cursor.fetchall()]
+
+    # Fetch all data from the table
+    cursor.execute(f"SELECT * FROM {table_name}")
+    rows = cursor.fetchall()
+
+    # Print the table name and columns
+    print(f"Table: {table_name}")
+    print(f"Columns: {', '.join(columns)}")
+    print("-" * 40)
+
+    # Print each row
+    for row in rows:
+        print(row)
+
+    print("-" * 40)
+    print(f"Total rows: {len(rows)}")
+
 def sort_and_rebalance(db_name, table_name):
     if not os.path.isfile(db_name):
         print(f"Database file '{db_name}' not found.")
@@ -80,6 +102,7 @@ def sort_and_rebalance(db_name, table_name):
     rows = fetch_sorted_data(cursor, table_name)
     indices = get_column_indices(cursor, table_name)
     update_rebalance_hours(cursor, table_name, rows, indices)
+    print_table_data(cursor, table_name)
 
     conn.commit()
     conn.close()
