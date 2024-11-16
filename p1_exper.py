@@ -111,9 +111,11 @@ def sort_and_rebalance(db_name, table_name):
 def usage():
     print(f"Version: {version}")
     print()
-    print("Usage: ./p1_exper.py <db_filename> [table_name]")
-    print("  db_filename: File name of the database")
-    print("  table_name:  Optional, specify the table to process (if not provided, the app will try to find it automatically)")
+    print("Usage: ./p1_exper.py <name> or <db_filename> <table_name>")
+    print("  name: If only one parameter db_filename=name.db table_name=name")
+    print("  db_filename: File name of database")
+    print("  table_name: Table within the database to dump")
+
 
 if __name__ == "__main__":
     level = None
@@ -124,7 +126,14 @@ if __name__ == "__main__":
         usage()
         sys.exit(1)
 
-    db_filename = sys.argv[1]
-    table_name = sys.argv[2] if len(sys.argv) == 3 else None
+    if len(sys.argv) == 2:
+        table_name = sys.argv[1]
+        db_filename = table_name + ".db"
+    elif len(sys.argv) == 3:
+        db_filename = sys.argv[1]
+        table_name = sys.argv[2]
+    else:
+        usage()
+        sys.exit(1)
 
     sort_and_rebalance(db_filename, table_name)

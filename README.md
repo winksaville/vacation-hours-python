@@ -47,12 +47,12 @@ New records loaded: 5
 Here we'll use 3 parameters and load two csv files which overlap:
 ```
 $ cat vacation_hours.name1-3.csv
-UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accurred,Balance Hours
+UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accrued,Balance hours
 1,Name1,100,50,2024-10-01,8,102
 2,Name1,100,50,2024-10-01,-2,100
 3,Name2,50,75,2024-10-01,5,55
 $ cat vacation_hours.name3-5.csv
-UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accurred,Balance Hours
+UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accrued,Balance hours
 3,Name2,50,75,2024-10-01,5,55
 4,Name3,200,25,2024-10-01,8,208
 5,Name3,200,25,2024-10-01,-8,200
@@ -67,7 +67,7 @@ Data from 'vacation_hours.name1-3.csv' loaded into 'ledger.db' as table 'vacatio
 New records loaded: 3
 $ ./dump.py ledger.db vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
@@ -83,7 +83,7 @@ Data from 'vacation_hours.name3-5.csv' loaded into 'ledger.db' as table 'vacatio
 New records loaded: 2
 $ ./dump.py ledger.db vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
@@ -114,7 +114,7 @@ $ ./load.py vacation_hours
 Data from 'vacation_hours.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
 $ ./dump.py vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
@@ -130,13 +130,62 @@ $ ./load.py ledger.db vacation_hours.csv
 Data from 'vacation_hours.csv' loaded into 'ledger.db' as table 'vacation_hours'.
 $ ./dump.py ledger.db vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
 ('3', 'Name2', '50', '75', '2024-10-01', '5', '55')
 ('4', 'Name3', '200', '25', '2024-10-01', '8', '208')
 ('5', 'Name3', '200', '25', '2024-10-01', '-8', '200')
+```
+
+### Processing 1 experiment
+
+Computes a "Rebalance_hours" as an additional column.
+
+ATM I think there are two corner case bugs:
+  1. Rebalance_hours needs to be reduced when it exceeds
+    Max_vacation_hours. Not sure how to do this as it
+    as the way it's handled for Balance_hours is to
+    create a new transaction. Not sure how to do that
+    should we add a new transaction and change UniqueId?
+  1. Correction transactions should always be ignored
+    when computing Rebalance_hours. Any correction will
+    be handled by 1 above.
+
+```
+$ rm *.db
+$ ./p1_exper.py
+Version: 0.2.0-wip
+
+Usage: ./p1_exper.py <name> or <db_filename> <table_name>
+  name: If only one parameter db_filename=name.db table_name=name
+  db_filename: File name of database
+  table_name: Table within the database to dump
+$ ./load.py vacation_hours
+Data from 'vacation_hours.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
+New records loaded: 5
+$ ./dump.py vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
+----------------------------------------
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55')
+('4', 'Name3', '200', '25', '2024-10-01', '8', '208')
+('5', 'Name3', '200', '25', '2024-10-01', '-8', '200')
+$ ./p1_exper.py vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
+----------------------------------------
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 8)
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 6)
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 5)
+('4', 'Name3', '200', '25', '2024-10-01', '8', '208', 8)
+('5', 'Name3', '200', '25', '2024-10-01', '-8', '200', 0)
+----------------------------------------
+Total rows: 5
+Rebalance hours updated for table 'vacation_hours'.
 ```
 
 ## License
