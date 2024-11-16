@@ -141,51 +141,150 @@ Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hour
 
 ### Processing 1 experiment
 
-Computes a "Rebalance_hours" as an additional column.
+Seems to be working!
 
-ATM I think there are two corner case bugs:
-  1. Rebalance_hours needs to be reduced when it exceeds
-    Max_vacation_hours. Not sure how to do this as it
-    as the way it's handled for Balance_hours is to
-    create a new transaction. Not sure how to do that
-    should we add a new transaction and change UniqueId?
-  1. Correction transactions should always be ignored
-    when computing Rebalance_hours. Any correction will
-    be handled by 1 above.
-
+Here we remove all databased then load vactiona_hours_simple.csv then run p1_exper.py:
 ```
-$ rm *.db
-$ ./p1_exper.py
-Version: 0.2.0-wip
-
-Usage: ./p1_exper.py <name> or <db_filename> <table_name>
-  name: If only one parameter db_filename=name.db table_name=name
-  db_filename: File name of database
-  table_name: Table within the database to dump
-$ ./load.py vacation_hours
-Data from 'vacation_hours.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
-New records loaded: 5
-$ ./dump.py vacation_hours
-Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
-----------------------------------------
-('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
-('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
-('3', 'Name2', '50', '75', '2024-10-01', '5', '55')
-('4', 'Name3', '200', '25', '2024-10-01', '8', '208')
-('5', 'Name3', '200', '25', '2024-10-01', '-8', '200')
-$ ./p1_exper.py vacation_hours
+wink@3900x 24-11-16T21:24:11.931Z:~/prgs/katrina/vacation-hours-python (v0.2.0-wip)
+$ rm *.db; ./load.py vacation_hours.db vacation_hours_simple.csv vacation_hours && ./p1_exper.py vacation_hours
+Data from 'vacation_hours_simple.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
+New records loaded: 3
+DEBUG: Added 'Rebalance_hours' column to vacation_hours
+DEBUG: update_reblance_hours:+
+DEBUG: update_reblance_hours: TOL row: ('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 0)
+DEBUG: update_reblance_hours: new name: Name4 previous_name: None
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 8
+DEBUG: update_reblance_hours: BOL rebalance_hours: 8 previous_rebalance_hours: 8 previous_name: Name4
+DEBUG: update_reblance_hours: TOL row: ('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 0)
+DEBUG: update_reblance_hours: new name: Name5 previous_name: Name4
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 8
+DEBUG: update_reblance_hours: BOL rebalance_hours: 8 previous_rebalance_hours: 8 previous_name: Name5
+DEBUG: update_reblance_hours: TOL row: ('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 0)
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 16
+DEBUG: update_reblance_hours: BOL rebalance_hours: 16 previous_rebalance_hours: 16 previous_name: Name5
+DEBUG: update_reblance_hours:-
 Table: vacation_hours
 Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
 ----------------------------------------
-('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 8)
-('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 6)
-('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 5)
-('4', 'Name3', '200', '25', '2024-10-01', '8', '208', 8)
-('5', 'Name3', '200', '25', '2024-10-01', '-8', '200', 0)
+('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
 ----------------------------------------
-Total rows: 5
+Total rows: 3
 Rebalance hours updated for table 'vacation_hours'.
+wink@3900x 24-11-16T21:24:18.493Z:~/prgs/katrina/vacation-hours-python (v0.2.0-wip)
+```
+
+Next we load vacation_hours.csv and we see that all the Rebalance hours for
+them is zero so they'll be processed when we next run p1_exper.py:
+```
+wink@3900x 24-11-16T21:24:18.493Z:~/prgs/katrina/vacation-hours-python (v0.2.0-wip)
+$ ./load.py vacation_hours
+Data from 'vacation_hours.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
+New records loaded: 8
+wink@3900x 24-11-16T21:24:36.818Z:~/prgs/katrina/vacation-hours-python (v0.2.0-wip)
+$ ./dump.py vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
+----------------------------------------
+('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 0)
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 0)
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 0)
+('4', 'Name3', '200', '25', '2024-10-01', '8', '25', 0)
+('5', 'Name1', '100', '50', '2024-10-15', '8', '108', 0)
+('6', 'Name1', '100', '50', '2024-10-15', '-8', '100', 0)
+('7', 'Name2', '50', '75', '2024-10-15', '8', '63', 0)
+('8', 'Name3', '200', '25', '2024-10-15', '8', '33', 0)
+wink@3900x 24-11-16T21:24:45.190Z:~/prgs/katrina/vacation-hours-python (v0.2.0-wip)
+```
+
+Now run p1_exper.py and
+```
+wink@3900x 24-11-16T21:24:45.190Z:~/prgs/katrina/vacation-hours-python (v0.2.0-wip)
+$ ./p1_exper.py vacation_hours
+DEBUG: update_reblance_hours:+
+DEBUG: update_reblance_hours: TOL row: ('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 0)
+DEBUG: update_reblance_hours: new name: Name1 previous_name: None
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 8
+DEBUG: update_reblance_hours: BOL rebalance_hours: 8 previous_rebalance_hours: 8 previous_name: Name1
+DEBUG: update_reblance_hours: TOL row: ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 0)
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: set rebalance_hours: 0 to 8
+DEBUG: update_reblance_hours: rebalance_hours: 8
+DEBUG: update_reblance_hours: BOL rebalance_hours: 8 previous_rebalance_hours: 8 previous_name: Name1
+DEBUG: update_reblance_hours: TOL row: ('5', 'Name1', '100', '50', '2024-10-15', '8', '108', 0)
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 16
+DEBUG: update_reblance_hours: BOL rebalance_hours: 16 previous_rebalance_hours: 16 previous_name: Name1
+DEBUG: update_reblance_hours: TOL row: ('6', 'Name1', '100', '50', '2024-10-15', '-8', '100', 0)
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: set rebalance_hours: 0 to 16
+DEBUG: update_reblance_hours: rebalance_hours: 16
+DEBUG: update_reblance_hours: BOL rebalance_hours: 16 previous_rebalance_hours: 16 previous_name: Name1
+DEBUG: update_reblance_hours: TOL row: ('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 0)
+DEBUG: update_reblance_hours: new name: Name2 previous_name: Name1
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 5
+DEBUG: update_reblance_hours: rebalance_hours: 5
+DEBUG: update_reblance_hours: BOL rebalance_hours: 5 previous_rebalance_hours: 5 previous_name: Name2
+DEBUG: update_reblance_hours: TOL row: ('7', 'Name2', '50', '75', '2024-10-15', '8', '63', 0)
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 13
+DEBUG: update_reblance_hours: BOL rebalance_hours: 13 previous_rebalance_hours: 13 previous_name: Name2
+DEBUG: update_reblance_hours: TOL row: ('4', 'Name3', '200', '25', '2024-10-01', '8', '25', 0)
+DEBUG: update_reblance_hours: new name: Name3 previous_name: Name2
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 8
+DEBUG: update_reblance_hours: BOL rebalance_hours: 8 previous_rebalance_hours: 8 previous_name: Name3
+DEBUG: update_reblance_hours: TOL row: ('8', 'Name3', '200', '25', '2024-10-15', '8', '33', 0)
+DEBUG: update_reblance_hours: rebalance_hours: 0 == 0
+DEBUG: update_reblance_hours: inc rebalance_hours: 0 by  hours_accrued: 8
+DEBUG: update_reblance_hours: rebalance_hours: 16
+DEBUG: update_reblance_hours: BOL rebalance_hours: 16 previous_rebalance_hours: 16 previous_name: Name3
+DEBUG: update_reblance_hours: TOL row: ('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+DEBUG: update_reblance_hours: new name: Name4 previous_name: Name3
+DEBUG: update_reblance_hours: rebalance_hours: 8 != 0,  ignore because we've updated in a previous run!
+DEBUG: update_reblance_hours: BOL rebalance_hours: 8 previous_rebalance_hours: 8 previous_name: Name4
+DEBUG: update_reblance_hours: TOL row: ('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+DEBUG: update_reblance_hours: new name: Name5 previous_name: Name4
+DEBUG: update_reblance_hours: rebalance_hours: 8 != 0,  ignore because we've updated in a previous run!
+DEBUG: update_reblance_hours: BOL rebalance_hours: 8 previous_rebalance_hours: 8 previous_name: Name5
+DEBUG: update_reblance_hours: TOL row: ('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
+DEBUG: update_reblance_hours: rebalance_hours: 16 != 0,  ignore because we've updated in a previous run!
+DEBUG: update_reblance_hours: BOL rebalance_hours: 16 previous_rebalance_hours: 16 previous_name: Name5
+DEBUG: update_reblance_hours:-
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
+----------------------------------------
+('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 8)
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 8)
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 5)
+('4', 'Name3', '200', '25', '2024-10-01', '8', '25', 8)
+('5', 'Name1', '100', '50', '2024-10-15', '8', '108', 16)
+('6', 'Name1', '100', '50', '2024-10-15', '-8', '100', 16)
+('7', 'Name2', '50', '75', '2024-10-15', '8', '63', 13)
+('8', 'Name3', '200', '25', '2024-10-15', '8', '33', 16)
+----------------------------------------
+Total rows: 11
+Rebalance hours updated for table 'vacation_hours'.
+wink@3900x 24-11-16T21:25:05.574Z:~/prgs/katrina/vacation-hours-python (v0.2.0-wip)
 ```
 
 ## License

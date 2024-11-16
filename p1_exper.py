@@ -32,28 +32,73 @@ def get_column_indices(cursor, table_name):
     return {
         "UniqueId": columns.index("UniqueId"),
         "Name": columns.index("Name"),
-        "Hours_accrued": columns.index("Hours_accrued")
+        "Hours_accrued": columns.index("Hours_accrued"),
+        "Balance_hours": columns.index("Balance_hours"),
+        "Rebalance_hours": columns.index("Rebalance_hours"),
     }
 
 def update_rebalance_hours(cursor, table_name, rows, indices):
+    """Assumes rows is sorted by name and UniqueId."""
     rebalance_hours = 0
+    previous_rebalance_hours = 0
     previous_name = None
+
+    logging.debug(f"update_reblance_hours:+") # row: {rows}")
 
     for row in rows:
         unique_id = row[indices["UniqueId"]]
         name = row[indices["Name"]]
         hours_accrued = int(row[indices["Hours_accrued"]])
+        balance_hours = int(row[indices["Balance_hours"]])
+
+        logging.debug(f"update_reblance_hours: TOL row: {row}")
 
         if name != previous_name:
-            rebalance_hours = 0
+            # Initialize previous_rebalance_hours to 0 as this
+            # is the first entry for a new set of names.
+            logging.debug(f"update_reblance_hours: new name: {name} previous_name: {previous_name}")
+            previous_rebalance_hours = 0
 
-        rebalance_hours += hours_accrued
-        cursor.execute(
-            f"UPDATE {table_name} SET Rebalance_hours = ? WHERE UniqueId = ?",
-            (rebalance_hours, unique_id)
-        )
+        # Get the Rebalance_hours and update only if it's 0.
+        # If it's not zero than this has already been processed
+        # and we don't want to do it again.
+        rebalance_hours = int(row[indices["Rebalance_hours"]])
+        if rebalance_hours == 0:
+            logging.debug(f"update_reblance_hours: rebalance_hours: {rebalance_hours} == 0")
+            # We ignore negative hours_accured while calculating rebalance_hours
+            # so rebalance_hours converges to balance_hours more evenly and
+            # quickly.
+            if hours_accrued >= 0:
+                # if positive update rebalance_hours
+                logging.debug(f"update_reblance_hours: inc rebalance_hours: {rebalance_hours} by  hours_accrued: {hours_accrued}")
+                rebalance_hours = previous_rebalance_hours + hours_accrued
+            else:
+                # If negative inherit the previous value
+                logging.debug(f"update_reblance_hours: set rebalance_hours: {rebalance_hours} to {previous_rebalance_hours}")
+                rebalance_hours = previous_rebalance_hours
+
+            # We've updated rebalance_hours but it must never exceed balance_hours,
+            # which is the current actual number of vacation hours accrued. This
+            # means that once rebalance reaches balance_hours it will remain
+            # in equalibrium and never diverge.
+            if rebalance_hours > balance_hours:
+                logging.debug(f"update_reblance_hours: set rebalance_hours: {rebalance_hours} to {balance_hours}")
+                rebalance_hours = balance_hours
+            logging.debug(f"update_reblance_hours: rebalance_hours: {rebalance_hours}")
+
+            cursor.execute(
+                f"UPDATE {table_name} SET Rebalance_hours = ? WHERE UniqueId = ?",
+                (rebalance_hours, unique_id)
+            )
+        else:
+            logging.debug(f"update_reblance_hours: rebalance_hours: {rebalance_hours} != 0,  ignore because we've updated in a previous run!")
+
 
         previous_name = name
+        previous_rebalance_hours = rebalance_hours
+        logging.debug(f"update_reblance_hours: BOL rebalance_hours: {rebalance_hours} previous_rebalance_hours: {previous_rebalance_hours} previous_name: {previous_name}")
+
+    logging.debug(f"update_reblance_hours:-") # row: {rows}")
 
 def print_table_data(cursor, table_name):
     """Prints the contents of the table in a formatted way."""
@@ -118,8 +163,8 @@ def usage():
 
 
 if __name__ == "__main__":
-    level = None
-    #level = logging.DEBUG
+    #level = None
+    level = logging.DEBUG
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
     if len(sys.argv) == 1:
