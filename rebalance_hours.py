@@ -163,8 +163,8 @@ def usage():
 
 
 if __name__ == "__main__":
-    #level = None
-    level = logging.DEBUG
+    level = None
+    #level = logging.DEBUG
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
     if len(sys.argv) == 1:
