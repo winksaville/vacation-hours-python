@@ -1,6 +1,9 @@
-UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accurred,Balance Hours
+UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accrued,Balance hours
 1,Name1,100,50,2024-10-01,8,102
 2,Name1,100,50,2024-10-01,-2,100
 3,Name2,50,75,2024-10-01,5,55
-4,Name3,200,25,2024-10-01,8,208
-5,Name3,200,25,2024-10-01,-8,200
+4,Name3,200,25,2024-10-01,8,25
+5,Name1,100,50,2024-10-15,8,108
+6,Name1,100,50,2024-10-15,-8,100
+7,Name2,50,75,2024-10-15,8,63
+8,Name3,200,25,2024-10-15,8,33

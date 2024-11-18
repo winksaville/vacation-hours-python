@@ -47,12 +47,12 @@ New records loaded: 5
 Here we'll use 3 parameters and load two csv files which overlap:
 ```
 $ cat vacation_hours.name1-3.csv
-UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accurred,Balance Hours
+UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accrued,Balance hours
 1,Name1,100,50,2024-10-01,8,102
 2,Name1,100,50,2024-10-01,-2,100
 3,Name2,50,75,2024-10-01,5,55
 $ cat vacation_hours.name3-5.csv
-UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accurred,Balance Hours
+UniqueId,Name,Max vacation hours,Hourly wage,Transaction date,Hours accrued,Balance hours
 3,Name2,50,75,2024-10-01,5,55
 4,Name3,200,25,2024-10-01,8,208
 5,Name3,200,25,2024-10-01,-8,200
@@ -67,7 +67,7 @@ Data from 'vacation_hours.name1-3.csv' loaded into 'ledger.db' as table 'vacatio
 New records loaded: 3
 $ ./dump.py ledger.db vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
@@ -83,7 +83,7 @@ Data from 'vacation_hours.name3-5.csv' loaded into 'ledger.db' as table 'vacatio
 New records loaded: 2
 $ ./dump.py ledger.db vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
@@ -114,7 +114,7 @@ $ ./load.py vacation_hours
 Data from 'vacation_hours.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
 $ ./dump.py vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
@@ -130,13 +130,109 @@ $ ./load.py ledger.db vacation_hours.csv
 Data from 'vacation_hours.csv' loaded into 'ledger.db' as table 'vacation_hours'.
 $ ./dump.py ledger.db vacation_hours
 Table: vacation_hours
-Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accurred, Balance_Hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours
 ----------------------------------------
 ('1', 'Name1', '100', '50', '2024-10-01', '8', '102')
 ('2', 'Name1', '100', '50', '2024-10-01', '-2', '100')
 ('3', 'Name2', '50', '75', '2024-10-01', '5', '55')
 ('4', 'Name3', '200', '25', '2024-10-01', '8', '208')
 ('5', 'Name3', '200', '25', '2024-10-01', '-8', '200')
+```
+
+### Add Rebalance hours column
+
+Rebalance hours represents allows the Hours accrued to be gradually
+introduced into the balance sheet with smoothing out would otherwize
+would be a significant increase in the liabilities on the balance
+sheet.
+
+Here we remove all databased then load vactiona_hours_simple.csv then run rebalance_hours.py:
+```
+wink@3900x 24-11-18T19:07:05.037Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+$ rm *.db; ./load.py vacation_hours.db vacation_hours_simple.csv vacation_hours && ./rebalance_hours.py vacation_hours
+Data from 'vacation_hours_simple.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
+New records loaded: 3
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
+----------------------------------------
+('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
+----------------------------------------
+Total rows: 3
+Rebalance hours updated for table 'vacation_hours'.
+wink@3900x 24-11-18T19:07:07.481Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+```
+
+Next we load vacation_hours.csv and we see that all the Rebalance hours for
+them is zero so they'll be processed when we next run rebalance_hours.py:
+```
+wink@3900x 24-11-18T19:08:13.190Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+$ ./load.py vacation_hours
+Data from 'vacation_hours.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
+New records loaded: 8
+wink@3900x 24-11-18T19:08:26.585Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+$ ./dump.py vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
+----------------------------------------
+('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 0)
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 0)
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 0)
+('4', 'Name3', '200', '25', '2024-10-01', '8', '25', 0)
+('5', 'Name1', '100', '50', '2024-10-15', '8', '108', 0)
+('6', 'Name1', '100', '50', '2024-10-15', '-8', '100', 0)
+('7', 'Name2', '50', '75', '2024-10-15', '8', '63', 0)
+('8', 'Name3', '200', '25', '2024-10-15', '8', '33', 0)
+wink@3900x 24-11-18T19:08:38.460Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+```
+
+Now run rebalance_hours.py to update the new records Rebalance hours column
+```
+wink@3900x 24-11-18T19:08:38.460Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+$ ./rebalance_hours.py vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
+----------------------------------------
+('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 8)
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 8)
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 5)
+('4', 'Name3', '200', '25', '2024-10-01', '8', '25', 8)
+('5', 'Name1', '100', '50', '2024-10-15', '8', '108', 16)
+('6', 'Name1', '100', '50', '2024-10-15', '-8', '100', 16)
+('7', 'Name2', '50', '75', '2024-10-15', '8', '63', 13)
+('8', 'Name3', '200', '25', '2024-10-15', '8', '33', 16)
+----------------------------------------
+Total rows: 11
+Rebalance hours updated for table 'vacation_hours'.
+wink@3900x 24-11-18T19:10:04.697Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+```
+
+And we verify that the database table vacation_hours has been updated:
+```
+wink@3900x 24-11-18T19:10:04.697Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
+$ ./dump.py vacation_hours
+Table: vacation_hours
+Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hours_accrued, Balance_hours, Rebalance_hours
+----------------------------------------
+('101', 'Name5', '80', '50', '2024-11-01', '8', '40', 8)
+('104', 'Name4', '40', '25', '2024-11-01', '8', '8', 8)
+('105', 'Name5', '80', '50', '2024-12-01', '8', '48', 16)
+('1', 'Name1', '100', '50', '2024-10-01', '8', '102', 8)
+('2', 'Name1', '100', '50', '2024-10-01', '-2', '100', 8)
+('3', 'Name2', '50', '75', '2024-10-01', '5', '55', 5)
+('4', 'Name3', '200', '25', '2024-10-01', '8', '25', 8)
+('5', 'Name1', '100', '50', '2024-10-15', '8', '108', 16)
+('6', 'Name1', '100', '50', '2024-10-15', '-8', '100', 16)
+('7', 'Name2', '50', '75', '2024-10-15', '8', '63', 13)
+('8', 'Name3', '200', '25', '2024-10-15', '8', '33', 16)
+wink@3900x 24-11-18T19:10:20.564Z:~/prgs/katrina/vacation-hours-python (v0.2.0)
 ```
 
 ## License
