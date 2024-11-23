@@ -6,6 +6,8 @@ import logging
 import os
 import sqlite3
 import sys
+import re
+from datetime import datetime
 
 # Local application imports
 from version import version
@@ -31,27 +33,85 @@ def get_headers_from_csv(csv_file):
         headers = next(reader)
     return sanitize_headers(headers)
 
-def create_table(cursor, table_name, headers):
-    logging.debug(f"table_name: {table_name}")
-    logging.debug(f"headers: {headers}")
-    columns = ', '.join([f'"{header}" TEXT' for header in headers])
+def infer_sqlite_type(sample_values):
+    """
+    Infer SQLite data type based on a list of sample values.
+    """
+    for value in sample_values:
+        value = value.strip()
+        if value.isdigit():
+            logging.debug(f"INTEGER: {value}")
+            return "INTEGER"
+        try:
+            float(value)
+            logging.debug(f"REAL: {value}")
+            return "REAL"
+        except ValueError:
+            pass
+        try:
+            # Check for date in MM/DD/YYYY format
+            datetime.strptime(value, "%m/%d/%Y")
+            logging.debug(f"DATE: {value}")
+            return "DATE"
+        except ValueError:
+            pass
+        # Check for dollar amounts (e.g., $50.00)
+        if re.match(r"^\$\d+(\.\d{1,2})?$", value):
+            logging.debug(f"REAL$: {value}")
+            return "REAL"
+    logging.debug(f"TEXT")
+    return "TEXT"
 
-    # Set 'UniqueId' as the primary key
-    if "UniqueId" in headers:
-        columns += ', PRIMARY KEY("UniqueId")'
-
-    logging.debug(f"columns: {columns}")
-    cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns})')
-
-def insert_data_from_csv(cursor, table_name, headers, csv_file):
+def get_sample_values(csv_file, column_index, sample_size=10):
+    """
+    Get sample values from a specific column of the CSV file for type inference.
+    """
+    sample_values = []
     with open(csv_file, newline='') as f:
         reader = csv.reader(f)
-        next(reader)  # Skip the header row
+        next(reader)  # Skip header row
+        for i, row in enumerate(reader):
+            if i >= sample_size:
+                break
+            sample_values.append(row[column_index])
+    return sample_values
+
+def create_table(cursor, table_name, headers, csv_file):
+    """
+    Create a table with inferred column types.
+    """
+    column_definitions = []
+    for idx, header in enumerate(headers):
+        sample_values = get_sample_values(csv_file, idx)
+        column_type = infer_sqlite_type(sample_values)
+        column_definitions.append(f'"{header}" {column_type}')
+
+    logging.debug(f"column_definitions: {column_definitions}")
+
+    ## Set 'UniqueId' as the primary key if it exists
+    #if "UniqueId" in headers:
+    #    column_definitions.append('PRIMARY KEY("UniqueId")')
+
+    columns = ', '.join(column_definitions)
+    logging.debug(f"columns: {columns}")
+    query = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns})'
+    logging.debug(f"query: {query}")
+    cursor.execute(query)
+    #cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns})')
+
+def insert_data_from_csv(cursor, table_name, headers, csv_file):
+    """
+    Insert data into the table, converting values to match their inferred types.
+    """
+    with open(csv_file, newline='') as f:
+        reader = csv.reader(f)
+        next(reader)  # Skip header row
         insert_query = f"INSERT OR IGNORE INTO {table_name} ({', '.join(headers)}) VALUES ({', '.join(['?' for _ in headers])})"
-        logging.debug(f"insert_query: {insert_query}")
 
         new_records_count = 0
         for row in reader:
+            # Convert dollar amounts and remove the $ sign
+            row = [float(value[1:]) if re.match(r"^\$\d+(\.\d{1,2})?$", value.strip()) else value.strip() for value in row]
             cursor.execute(insert_query, row)
             if cursor.rowcount > 0:
                 new_records_count += 1
@@ -67,7 +127,7 @@ def load_csv_to_sqlite(db_filename, csv_filename, table_name):
     headers = get_headers_from_csv(csv_filename)
     logging.debug(f"headers: {headers}");
 
-    create_table(cursor, table_name, headers)
+    create_table(cursor, table_name, headers, csv_filename)
     new_records_count = insert_data_from_csv(cursor, table_name, headers, csv_filename)
 
     conn.commit()

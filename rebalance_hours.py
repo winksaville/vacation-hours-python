@@ -18,7 +18,7 @@ def add_rebalance_column(cursor, table_name):
     cursor.execute(f"PRAGMA table_info({table_name})")
     columns = [info[1] for info in cursor.fetchall()]
     if "Rebalance_hours" not in columns:
-        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN Rebalance_hours INTEGER DEFAULT 0")
+        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN Rebalance_hours REAL DEFAULT 0.0")
         logging.debug(f"Added 'Rebalance_hours' column to {table_name}")
 
 def fetch_sorted_data(cursor, table_name):
