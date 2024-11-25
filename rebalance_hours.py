@@ -20,6 +20,7 @@ def add_rebalance_column(cursor, table_name):
     if "Rebalance_hours" not in columns:
         cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN Rebalance_hours REAL DEFAULT 0.0")
         logging.debug(f"Added 'Rebalance_hours' column to {table_name}")
+    logging.debug(f"add_rebalance_column: columns: {columns}")
 
 def fetch_sorted_data(cursor, table_name):
     query = f"SELECT * FROM {table_name} ORDER BY Name, UniqueId"
