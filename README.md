@@ -2,6 +2,32 @@
 
 Process Vacation hours using Python
 
+## Install git if git is not installed
+
+### Git for Windows
+
+* Download the install executable from [git-scm.com](https://git-scm.com/downloads/win)
+  it says "Click here to download"
+* Run `Git-x.x.x.x-64-bit.exe` in the browser you should be able to run it from the download icon
+* I took the defaults, except I selected all the optional features and I use VIM as my editor.
+
+It should be installed in `C:\Program Files\Git` and the `git.exe` should be installed.
+
+#### Open a Git Bash shell
+
+* Double click on the "GIT Bash" desktop icon and a command line terminal will open.
+* Create a directory for the project and clone the project:
+  ```
+  $ mkdir -p ~/prgs/katrina
+  $ cd ~/prgs/katrina
+  $ git clone https://github.com/winksaville/vacation-hours-python.git
+  ```
+* Change to the directory where the project was cloned:
+  ```
+  $ cd vacation-hours-python
+  ```
+* Now you can run the scripts as described below.
+
 ## Run
 
 Assumes the current directory is the directory
@@ -151,12 +177,22 @@ Columns: UniqueId, Name, Max_vacation_hours, Hourly_wage, Transaction_date, Hour
 
 ### Add Rebalance hours column
 
+
 Rebalance hours represents allows the Hours accrued to be gradually
 introduced into the balance sheet with smoothing out would otherwize
 would be a significant increase in the liabilities on the balance
 sheet.
 
-Here we remove all databased then load vactiona_hours_simple.csv then run rebalance_hours.py:
+There are currently two versions, `rebalance_hours_raw.py` and `rebalance_hours.py`.
+The `rebalance_hours_raw.py` version handles input from Katrinas
+csv files and the `rebalance_hours.py` version handles the simple test
+csv files I created, vacation_hours_*.csv. They both operate the
+have the same parameters and usage but `rebalance_hours_raw.py`
+needs to do more work because it in Katrina's csv files the there
+is no UniqueId column and instead a ROWID column is added dynamically
+to the table.
+
+Here we remove all databases then load vactiona_hours_simple.csv then run rebalance_hours.py:
 ```
 $ rm *.db; ./load.py vacation_hours.db vacation_hours_simple.csv vacation_hours && ./rebalance_hours.py vacation_hours
 Data from 'vacation_hours_simple.csv' loaded into 'vacation_hours.db' as table 'vacation_hours'.
