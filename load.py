@@ -97,7 +97,6 @@ def create_table(cursor, table_name, headers, csv_file):
     query = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns})'
     logging.debug(f"query: {query}")
     cursor.execute(query)
-    #cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" ({columns})')
 
 def insert_data_from_csv(cursor, table_name, headers, csv_file):
     """
@@ -148,7 +147,7 @@ def usage():
 if __name__ == "__main__":
     # Configure logging
     level = None
-    #level = loggine.DEBUG
+    #level = logging.DEBUG
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
 
     if len(sys.argv) == 1:
